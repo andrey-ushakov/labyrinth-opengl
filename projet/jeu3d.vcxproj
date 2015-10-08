@@ -92,6 +92,7 @@
     <ClCompile Include="..\sources\input.cpp" />
     <ClCompile Include="..\sources\load.cpp" />
     <ClCompile Include="..\sources\main.cpp" />
+    <ClCompile Include="..\sources\maths_3d.cpp" />
     <ClCompile Include="..\sources\ogl.cpp" />
     <ClCompile Include="..\sources\point.cpp" />
     <ClCompile Include="..\sources\quaternion.cpp" />
@@ -103,6 +104,7 @@
     <ClInclude Include="..\sources\debug.h" />
     <ClInclude Include="..\sources\input.h" />
     <ClInclude Include="..\sources\load.h" />
+    <ClInclude Include="..\sources\maths_3d.h" />
     <ClInclude Include="..\sources\ogl.h" />
     <ClInclude Include="..\sources\point.h" />
     <ClInclude Include="..\sources\quaternion.h" />

@@ -16,6 +16,7 @@
 #include "load.h"
 #include "camera.h"
 #include "point.h"
+#include "maths_3d.h"
 
 
 
@@ -40,9 +41,23 @@ Texture *texWall = NULL;
 Texture *texGrass = NULL;
 Image	*heightmapLabyrinth = NULL;
 
+//todorefresh
+
+Texture *texture_terrain = NULL;
+Image *heightmap = NULL;
+
+float size1 = 5;		// resolution
+float size2 = 5;	// step
+
 // Camera
+CAMERA *cam = NULL;
+float	angleX = 0;
 float	angleY = 0;
-//CAMERA *cam = NULL;
+float	angleZ = 0;
+int posX = 0;
+int posY = 20;
+int posZ = 0;
+int speed = 3;
 
 /****************************************************************************\
 *                                                                            *
@@ -54,6 +69,215 @@ float	angleY = 0;
 
 void generateLabyrinth() {
 
+	// WALL
+	glGenTextures(1, texWall->OpenGL_ID);                // crée un "nom" de texture (un identifiant associé a la texture)
+	glBindTexture(GL_TEXTURE_2D, texWall->OpenGL_ID[0]);    // et on active ce "nom" comme texture courante (définie plus bas)
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    // on répète la texture en cas de U,V > 1.0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);    // ou < 0.0
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // indique qu'il faut mélanger la texture avec la couleur courante
+
+	// charge le tableau de la texture en mémoire vidéo et crée une texture mipmap
+	if (texWall->isRGBA)// with alpha
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA8, texWall->img_color->lenx, texWall->img_color->leny, GL_RGBA, GL_UNSIGNED_BYTE, texWall->img_all);
+	else
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB8, texWall->img_color->lenx, texWall->img_color->leny, GL_RGB, GL_UNSIGNED_BYTE, texWall->img_color->data);// no alpha
+
+	glEnable(GL_TEXTURE_2D);
+	glPushMatrix();
+	for (int i = 0; i < (int)heightmapLabyrinth->lenx - 1; i++) {
+		if (i % 4 == 1) {
+			for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
+				if (j % 4 == 0) {
+					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] > 125) {
+						/*if (j - 1 < 0 || (j - 1 >= 0 && (float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*(j - 1))] < 125)) {
+							glBegin(GL_QUADS);
+							glTexCoord2f(0, 0);
+							glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
+							glTexCoord2f(1, 0);
+							glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
+							glTexCoord2f(1, 1);
+							glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1);
+							glTexCoord2f(0, 1);
+							glVertex3f((i / 4)*size1, size2, (j / 4)*size1);
+							glEnd();
+						}
+
+						if (i - 1 < 0 || (i - 1 >= 0 && (float)heightmapLabyrinth->data[3 * ((i - 1) + heightmapLabyrinth->lenx*j)] < 125)) {
+							glBegin(GL_QUADS);
+							glTexCoord2f(0, 0);
+							glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
+							glTexCoord2f(1, 0);
+							glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
+							glTexCoord2f(1, 1);
+							glVertex3f((i / 4)*size1, size2, (j / 4)*size1);
+							glTexCoord2f(0, 1);
+							glVertex3f((i / 4)*size1, size2, (j / 4)*size1 + size1);
+							glEnd();
+						}*/
+
+						// back
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1, size2, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1 + size1);
+						glEnd();
+
+						// front
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f(		(i / 4)*size1 + size1,	0,		 (j / 4)*size1 );
+						glTexCoord2f(1, 0);
+						glVertex3f(		(i / 4)*size1,			0,		(j / 4)*size1 );
+						glTexCoord2f(1, 1);
+						glVertex3f(		(i / 4)*size1,			size2,	(j / 4)*size1 );
+						glTexCoord2f(0, 1);
+						glVertex3f(		(i / 4)*size1 + size1,	size2,	(j / 4)*size1 );
+						glEnd();
+
+						// left
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1);
+						glEnd();
+
+						// right
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + 0, 0, (j / 4)*size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1 + 0, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1 + 0, size2, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + 0, size2, (j / 4)*size1);
+						glEnd();
+
+						// top
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1, size2, (j / 4)*size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1, size2, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1 + size1);
+						glEnd();
+
+						// bottom
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
+						glEnd();
+					}
+					else {
+					}
+				}
+			}
+		}
+	}
+	glPopMatrix();
+	
+	
+	// GRASS
+	glGenTextures(1, texGrass->OpenGL_ID);                // crée un "nom" de texture (un identifiant associ??la texture)
+	glBindTexture(GL_TEXTURE_2D, texGrass->OpenGL_ID[0]);    // et on active ce "nom" comme texture courante (définie plus bas)
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    // on répète la texture en cas de U,V > 1.0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);    // ou < 0.0
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // indique qu'il faut mélanger la texture avec la couleur courante
+
+	// charge le tableau de la texture en mémoire vidéo et crée une texture mipmap
+	if (texGrass->isRGBA)// with alpha
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA8, texGrass->img_color->lenx, texGrass->img_color->leny, GL_RGBA, GL_UNSIGNED_BYTE, texGrass->img_all);
+	else
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB8, texGrass->img_color->lenx, texGrass->img_color->leny, GL_RGB, GL_UNSIGNED_BYTE, texGrass->img_color->data);// no alpha
+
+	glEnable(GL_TEXTURE_2D);
+	glPushMatrix();
+	for (int i = 0; i < (int)heightmapLabyrinth->lenx - 1; i++) {
+		if (i % 4 == 0) {
+			for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
+				if (j % 4 == 0) {
+					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] < 125) {
+						glBegin(GL_QUADS);
+						glTexCoord2f(0, 0);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
+						glTexCoord2f(1, 0);
+						glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
+						glTexCoord2f(1, 1);
+						glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
+						glTexCoord2f(0, 1);
+						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
+						glEnd();
+					}
+				}
+			}
+		}
+	}
+	glPopMatrix();
+}
+
+
+void terrain(){
+	float size = 10;
+	float size2 = 0.3;
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture_terrain->OpenGL_ID[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//charge le tableau de la texture en mÈmoire vidÈo et crÈe une texture mipmap
+	if (texture_terrain->isRGBA)
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA,
+		texture_terrain->img_color->lenx, texture_terrain->img_color->leny,
+		GL_RGBA, GL_UNSIGNED_BYTE, texture_terrain->img_all);
+	else
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA,
+		texture_terrain->img_color->lenx, texture_terrain->img_color->leny,
+		GL_RGB, GL_UNSIGNED_BYTE, texture_terrain->img_color->data);
+
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < (int)heightmap->lenx - 1; i++){
+		for (int j = 0; j < (int)heightmap->leny - 1; j++){
+			float I = i - (int)heightmap->lenx / 2;
+			float J = j - (int)heightmap->leny / 2;
+			glTexCoord2f((float)i / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
+			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 0))], (J + 0)*size);
+			glTexCoord2f((float)i / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
+			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 1))], (J + 1)*size);
+			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
+			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 0))], (J + 0)*size);
+
+			glTexCoord2f((float)i / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
+			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 1))], (J + 1)*size);
+			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
+			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 1))], (J + 1)*size);
+			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
+			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 0))], (J + 0)*size);
+		}
+	}
+	glEnd();
 }
 
 /********************************************************************\
@@ -82,11 +306,15 @@ bool start()
 	glViewport(0,0,win->Xres,win->Yres);				// zone de rendu (tout l'écran)
  	glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 	glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glDepthFunc(GL_LESS);								// The Type Of Depth Testing To Do
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// mapping quality = best
 	glFrontFace(GL_CCW);								// front of face is defined counter clock wise
 	glPolygonMode(GL_FRONT, GL_FILL);					// front of a face is filled
-	glPolygonMode(GL_BACK,  GL_LINE);					// back of a face is made of lines
+	glPolygonMode(GL_BACK, GL_FILL);					// back of a face is made of lines
 	glCullFace(GL_BACK);								// cull back face only
 	glDisable(GL_CULL_FACE);						    // disable back face culling
 
@@ -95,15 +323,22 @@ bool start()
 
 
 	// Load textures
-	//heightmapLabyrinth = new Image();
-	//heightmapLabyrinth->load_tga("./data/labyrinth1.tga");
+	heightmapLabyrinth = new Image();
+	heightmapLabyrinth->load_tga("./data/labyrinth1.tga");
 
 	texWall = new Texture();
-	texWall->load_texture("./data/grass.tga", NULL);
+	texWall->load_texture("./data/wall.tga", NULL);
 
 	texGrass = new Texture();
-	texGrass->load_texture("./data/wall.tga", NULL);
+	texGrass->load_texture("./data/grass.tga", NULL);
 
+	//todo
+	texture_terrain = new Texture();
+	texture_terrain->load_texture("./data/terrain.tga", NULL);
+	heightmap = new Image();
+	heightmap->load_tga("./data/heightmap.tga");
+
+	cam = new CAMERA();
 	
 	return true;
 }
@@ -129,6 +364,7 @@ void main_loop()
 
 	inp->refresh();
 	tim->update_horloge();
+	inp->get_mouse_movement();//pour avoir les dÈplacement de la souris
 
 
 	if (inp->keys[KEY_CODE_ESCAPE]) 
@@ -137,9 +373,9 @@ void main_loop()
 	}
 
 
-	if (tim->global_timer_25_Hz)				// augmente angleY tous les 20ème de seconde
+	/*if (tim->global_timer_25_Hz)				// augmente angleY tous les 20ème de seconde
         angleY += 1.0f;
-	if (angleY >= 360) angleY -= 360;
+	if (angleY >= 360) angleY -= 360;*/
 
 
 
@@ -150,19 +386,59 @@ void main_loop()
 	//						ça commence ici															//
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/*// votre code OpenGL ici
+	// votre code OpenGL ici
 	glMatrixMode(GL_PROJECTION);  //la matrice de projection sera celle selectionnee
 	//composition d'une matrice de projection
 	glLoadIdentity(); //on choisit la matrice identité
-	gluPerspective(60,(double)win->Xres/(double)win->Yres,10,30000);   //mise en place d une proj angle de vue 60 deg near 10 far 30000
+	gluPerspective(60, (double)win->Xres / (double)win->Yres, 0.1, 30000);   //mise en place d une proj angle de vue 60 deg near 10 far 30000
+
+
+	// camera
+	point dir = cam->direction - cam->position;
+	if (inp->keys[KEY_CODE_UP]){
+		posX += speed*dir.x;
+		posZ += speed*dir.z;
+	}
+	if (inp->keys[KEY_CODE_DOWN]){
+		posX -= speed*dir.x;
+		posZ -= speed*dir.z;
+	}
+	if (inp->keys[KEY_CODE_RIGHT]){
+		posX += speed*produit_vectoriel(dir, cam->orientation).x;
+		posZ += speed*produit_vectoriel(dir, cam->orientation).z;
+	}
+	if (inp->keys[KEY_CODE_LEFT]){
+		posX -= speed*produit_vectoriel(dir, cam->orientation).x;
+		posZ -= speed*produit_vectoriel(dir, cam->orientation).z;
+	}
+
+
+	angleX -= 0.1*(float)inp->Yrelmouse;
+	angleY -= 0.1*(float)inp->Xrelmouse;
+	if (angleY > 360) angleY -= 360;
+	if (angleY < 0) angleY += 360;
+	if (angleX>60) angleX = 60;
+	if (angleX < -60) angleX = -60;
+
+	cam->update(point(posX, posY, posZ), angleX, angleY, angleZ);
+
+
+
+
+	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluLookAt(0, 0, -100,		// position
-			  0, 0, 1,		// point cible
-			  0, 1, 0);		// vecteur up
+	gluLookAt(
+		cam->position.x, cam->position.y, cam->position.z,		// position
+		cam->direction.x, cam->direction.y, cam->direction.z,		// point cible
+		cam->orientation.x, cam->orientation.y, cam->orientation.z);		// vecteur up
+
+
+	generateLabyrinth();
+	//terrain();
 	
 
-	write_2_screen("Welcome to the OpenGL laboratory");
+	/*write_2_screen("Welcome to the OpenGL laboratory");
 
 
 	glTranslatef(0,0,0);
