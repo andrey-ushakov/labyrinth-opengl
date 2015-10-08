@@ -87,19 +87,25 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\sources\camera.cpp" />
     <ClCompile Include="..\sources\debug.cpp" />
     <ClCompile Include="..\sources\input.cpp" />
     <ClCompile Include="..\sources\load.cpp" />
     <ClCompile Include="..\sources\main.cpp" />
     <ClCompile Include="..\sources\ogl.cpp" />
+    <ClCompile Include="..\sources\point.cpp" />
+    <ClCompile Include="..\sources\quaternion.cpp" />
     <ClCompile Include="..\sources\timer.cpp" />
     <ClCompile Include="..\sources\window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\sources\camera.h" />
     <ClInclude Include="..\sources\debug.h" />
     <ClInclude Include="..\sources\input.h" />
     <ClInclude Include="..\sources\load.h" />
     <ClInclude Include="..\sources\ogl.h" />
+    <ClInclude Include="..\sources\point.h" />
+    <ClInclude Include="..\sources\quaternion.h" />
     <ClInclude Include="..\sources\timer.h" />
     <ClInclude Include="..\sources\type.h" />
     <ClInclude Include="..\sources\window.h" />

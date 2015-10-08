@@ -14,6 +14,8 @@
 #include "timer.h"
 #include "ogl.h"
 #include "load.h"
+#include "camera.h"
+#include "point.h"
 
 
 
@@ -29,12 +31,18 @@
 *                            Variables GLOBALES                              *
 *                                                                            *
 \****************************************************************************/
-WINDOW    *win = NULL;
-MY_INPUT     *inp = NULL;
-TIMER     *tim = NULL;
-Texture  *texture_a = NULL;	// used in exercice 1.1 TP2
+WINDOW		*win = NULL;
+MY_INPUT	*inp = NULL;
+TIMER		*tim = NULL;
 
+// Textures, images
+Texture *texWall = NULL;
+Texture *texGrass = NULL;
+Image	*heightmapLabyrinth = NULL;
+
+// Camera
 float	angleY = 0;
+//CAMERA *cam = NULL;
 
 /****************************************************************************\
 *                                                                            *
@@ -44,7 +52,9 @@ float	angleY = 0;
 
 
 
+void generateLabyrinth() {
 
+}
 
 /********************************************************************\
 *                                                                    *
@@ -82,6 +92,17 @@ bool start()
 
 
 	win->set_title("Mon jeu");
+
+
+	// Load textures
+	//heightmapLabyrinth = new Image();
+	//heightmapLabyrinth->load_tga("./data/labyrinth1.tga");
+
+	texWall = new Texture();
+	texWall->load_texture("./data/grass.tga", NULL);
+
+	texGrass = new Texture();
+	texGrass->load_texture("./data/wall.tga", NULL);
 
 	
 	return true;
@@ -129,7 +150,7 @@ void main_loop()
 	//						ça commence ici															//
 	//////////////////////////////////////////////////////////////////////////////////////////////////
 
-	// votre code OpenGL ici
+	/*// votre code OpenGL ici
 	glMatrixMode(GL_PROJECTION);  //la matrice de projection sera celle selectionnee
 	//composition d'une matrice de projection
 	glLoadIdentity(); //on choisit la matrice identité
@@ -150,7 +171,7 @@ void main_loop()
 		glColor3f(1,0,0); glVertex3f(-50,-50, -10);
 		glColor3f(0,1,0); glVertex3f(+50,-50, -10);
 		glColor3f(0,0,1); glVertex3f(  0,+50, -10);
-	glEnd();
+	glEnd();*/
 
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////
