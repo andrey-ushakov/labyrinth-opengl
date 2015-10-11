@@ -651,7 +651,7 @@ bool start()
 	cube(0, 0);
 	glEndList();*/
 
-	posStart = coordMinimapToWorld(6,6);
+	posStart = coordMinimapToWorld(13,9);
 	posStart.y += 3.5;
 	prevPosX = posX = posStart.x;
 	prevPosY = posY = posStart.y;
