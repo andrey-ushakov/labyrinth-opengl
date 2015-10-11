@@ -54,10 +54,12 @@ CAMERA *cam = NULL;
 float	angleX = 0;
 float	angleY = 0;
 float	angleZ = 0;
+float oldAngleX = 0;
+float oldAngleY = 0;
 int posX = 0;
 int posY = 20;
 int posZ = 0;
-int speed = 3;
+int speed = 2;
 
 /****************************************************************************\
 *                                                                            *
@@ -91,32 +93,6 @@ void generateLabyrinth() {
 			for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
 				if (j % 4 == 0) {
 					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] > 125) {
-						/*if (j - 1 < 0 || (j - 1 >= 0 && (float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*(j - 1))] < 125)) {
-							glBegin(GL_QUADS);
-							glTexCoord2f(0, 0);
-							glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
-							glTexCoord2f(1, 0);
-							glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
-							glTexCoord2f(1, 1);
-							glVertex3f((i / 4)*size1 + size1, size2, (j / 4)*size1);
-							glTexCoord2f(0, 1);
-							glVertex3f((i / 4)*size1, size2, (j / 4)*size1);
-							glEnd();
-						}
-
-						if (i - 1 < 0 || (i - 1 >= 0 && (float)heightmapLabyrinth->data[3 * ((i - 1) + heightmapLabyrinth->lenx*j)] < 125)) {
-							glBegin(GL_QUADS);
-							glTexCoord2f(0, 0);
-							glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
-							glTexCoord2f(1, 0);
-							glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
-							glTexCoord2f(1, 1);
-							glVertex3f((i / 4)*size1, size2, (j / 4)*size1);
-							glTexCoord2f(0, 1);
-							glVertex3f((i / 4)*size1, size2, (j / 4)*size1 + size1);
-							glEnd();
-						}*/
-
 						// back
 						glBegin(GL_QUADS);
 						glTexCoord2f(0, 0);
@@ -239,46 +215,6 @@ void generateLabyrinth() {
 }
 
 
-void terrain(){
-	float size = 10;
-	float size2 = 0.3;
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture_terrain->OpenGL_ID[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	//charge le tableau de la texture en mÈmoire vidÈo et crÈe une texture mipmap
-	if (texture_terrain->isRGBA)
-		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA,
-		texture_terrain->img_color->lenx, texture_terrain->img_color->leny,
-		GL_RGBA, GL_UNSIGNED_BYTE, texture_terrain->img_all);
-	else
-		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA,
-		texture_terrain->img_color->lenx, texture_terrain->img_color->leny,
-		GL_RGB, GL_UNSIGNED_BYTE, texture_terrain->img_color->data);
-
-	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < (int)heightmap->lenx - 1; i++){
-		for (int j = 0; j < (int)heightmap->leny - 1; j++){
-			float I = i - (int)heightmap->lenx / 2;
-			float J = j - (int)heightmap->leny / 2;
-			glTexCoord2f((float)i / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
-			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 0))], (J + 0)*size);
-			glTexCoord2f((float)i / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
-			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 1))], (J + 1)*size);
-			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
-			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 0))], (J + 0)*size);
-
-			glTexCoord2f((float)i / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
-			glVertex3f((I + 0)*size, size2*(float)heightmap->data[3 * (i + heightmap->lenx*(j + 1))], (J + 1)*size);
-			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)(j + 1) / (float)heightmap->leny);
-			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 1))], (J + 1)*size);
-			glTexCoord2f((float)(i + 1) / (float)heightmap->lenx, (float)j / (float)heightmap->leny);
-			glVertex3f((I + 1)*size, size2*(float)heightmap->data[3 * (i + 1 + heightmap->lenx*(j + 0))], (J + 0)*size);
-		}
-	}
-	glEnd();
-}
 
 /********************************************************************\
 *                                                                    *
@@ -413,19 +349,19 @@ void main_loop()
 	}
 
 
-	angleX -= 0.1*(float)inp->Yrelmouse;
-	angleY -= 0.1*(float)inp->Xrelmouse;
+
+	angleX -= 0.01*(float)inp->Yrelmouse;
+	angleY -= 0.01*(float)inp->Xrelmouse;
+
+	//if ((angleX - 0.01*(float)inp->Yrelmouse) - oldAngleX > 0)			angleX -= 0.01*(float)inp->Yrelmouse;
+	//else angleX += 0.01*(float)inp->Yrelmouse;
+
 	if (angleY > 360) angleY -= 360;
 	if (angleY < 0) angleY += 360;
-	if (angleX>60) angleX = 60;
+	if (angleX > 60) angleX = 60;
 	if (angleX < -60) angleX = -60;
 
 	cam->update(point(posX, posY, posZ), angleX, angleY, angleZ);
-
-
-
-
-	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(
@@ -433,15 +369,42 @@ void main_loop()
 		cam->direction.x, cam->direction.y, cam->direction.z,		// point cible
 		cam->orientation.x, cam->orientation.y, cam->orientation.z);		// vecteur up
 
+	// print debug info
+	glPushMatrix();
+	glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
+	char angleXArray[100] = "";
+	char angleYArray[100] = "";
+	char res[200] = "";
+	sprintf(angleXArray, "%f", (float)inp->Yrelmouse);
+	sprintf(angleYArray, "%f", angleY);
+	strcat(res, "x: ");
+	strcat(res, angleXArray);
+	//if (angleX - oldAngleX > 0)			strcat(res, " (+)");
+	//else if (angleX - oldAngleX < 0)	strcat(res, " (-)");
+	strcat(res, "; y: ");
+	strcat(res, angleYArray);
+	write_2_screen(res);
+	glPopMatrix();
+	// End print debug info
+
+
+	
+
+	
+
+
+	
+
+	oldAngleX = angleX;
+
 
 	generateLabyrinth();
 	//terrain();
+
 	
 
-	/*write_2_screen("Welcome to the OpenGL laboratory");
 
-
-	glTranslatef(0,0,0);
+	/*glTranslatef(0,0,0);
 	glRotatef(angleY,0,1,0);
 	glBegin(GL_TRIANGLES);
 		glColor3f(1,0,0); glVertex3f(-50,-50, -10);
