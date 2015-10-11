@@ -43,10 +43,11 @@ Texture *texWall = NULL;
 Texture *texGrass = NULL;
 Texture *texMinimap = NULL;
 Texture *texPlayer = NULL;
+Texture *texExit = NULL;
 Image	*heightmapLabyrinth = NULL;
 Image	*heightmapLabyrinthH = NULL;
 
-float size1 = 5;		// resolution
+float size1 = 5;	// resolution
 float size2 = 5;	// step
 
 // Camera
@@ -58,7 +59,7 @@ float oldAngleX = 0;
 float oldAngleY = 0;
 point posStart;
 float posX = 35;		float prevPosX = 35;
-float posY = 4.9;			float prevPosY = 4.9;
+float posY = 4.9;		float prevPosY = 4.9;
 float posZ = 10;		float prevPosZ = 10;
 float speed = 0.15;
 bool b_canMoveAtX = true;
@@ -565,10 +566,30 @@ void updatePosition() {
 	prevPosX = posX;
 	prevPosY = posY;
 	prevPosZ = posZ;
+}
+
+void exitDoor() {
+	glGenTextures(4, texExit->OpenGL_ID);                // crée un "nom" de texture (un identifiant associé a la texture)
+	glBindTexture(GL_TEXTURE_2D, texExit->OpenGL_ID[0]);    // et on active ce "nom" comme texture courante (définie plus bas)
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);    // on répète la texture en cas de U,V > 1.0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);    // ou < 0.0
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE); // indique qu'il faut mélanger la texture avec la couleur courante
+
+	// charge le tableau de la texture en mémoire vidéo et crée une texture mipmap
+	if (texExit->isRGBA)// with alpha
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGBA8, texExit->img_color->lenx, texExit->img_color->leny, GL_RGBA, GL_UNSIGNED_BYTE, texExit->img_all);
+	else
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB8, texExit->img_color->lenx, texExit->img_color->leny, GL_RGB, GL_UNSIGNED_BYTE, texExit->img_color->data);// no alpha
+
+	glEnable(GL_TEXTURE_2D);
+	glPushMatrix();
 
 
-	//////////////////
-	//////////////////
+	cube(6, 6);
+
+	glPopMatrix();
 }
 
 /********************************************************************\
@@ -628,9 +649,12 @@ bool start()
 
 	texMinimap = new Texture();
 	texMinimap->load_texture("./data/labyrinth1.tga", "./data/labyrinth1mask.tga");
-	
+
 	texPlayer = new Texture();
 	texPlayer->load_texture("./data/player.tga", "./data/playermask.tga");
+
+	texExit = new Texture();
+	texExit->load_texture("./data/exit.tga", "./data/exitmask.tga");
 
 	// bricks
 	bPtr_bricks = new bool*[heightmapLabyrinth->lenx / 4];
@@ -652,6 +676,7 @@ bool start()
 	glEndList();*/
 
 	posStart = coordMinimapToWorld(13,9);
+	//posStart = coordMinimapToWorld(6,6);
 	posStart.y += 3.5;
 	prevPosX = posX = posStart.x;
 	prevPosY = posY = posStart.y;
@@ -755,16 +780,12 @@ void main_loop()
 
 	generateLabyrinth();
 	minimap();
+	//exitDoor();
 
-	
-	/*if (isWall(posX, posZ)) {
-		posX = prevPosX;
-		posZ = prevPosZ;
-	}*/
 	oldAngleX = angleX;
 
 	//////////////////////////
-	for (int i = 0; i < heightmapLabyrinth->lenx / 4 - 1; ++i)
+	/*for (int i = 0; i < heightmapLabyrinth->lenx / 4 - 1; ++i)
 	{
 		for (int j = 0; j < heightmapLabyrinth->leny / 4 - 1; ++j)
 		{
@@ -804,12 +825,17 @@ void main_loop()
 				}
 			}
 		}
-	}
+	}*/
 
 
 
 
 	//////////////////////////
+
+	if (posX > 115 && posX < 119 & posZ > 104 && posZ < 108) {
+		debug("YOU WIN");
+		PostMessage(win->handle, WM_CLOSE, 0, 0);	// Stoppe la "pompe ?message" en y envoyant le message "QUIT"
+	}
 	
 
 	
