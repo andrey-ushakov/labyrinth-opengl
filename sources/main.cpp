@@ -39,12 +39,9 @@ TIMER		*tim = NULL;
 // Textures, images
 Texture *texWall = NULL;
 Texture *texGrass = NULL;
+Texture *texMinimap = NULL;
+Texture *texPlayer = NULL;
 Image	*heightmapLabyrinth = NULL;
-
-//todorefresh
-
-Texture *texture_terrain = NULL;
-Image *heightmap = NULL;
 
 float size1 = 5;		// resolution
 float size2 = 5;	// step
@@ -214,7 +211,92 @@ void generateLabyrinth() {
 	glPopMatrix();
 }
 
+point coordWorldToMinimap(point worldPoint) {
+	point result;
 
+	result.x = (int)(worldPoint.x / size1) * 4;
+	result.y = (int)(worldPoint.y / size1) * 4;
+
+	if ((worldPoint.x - ((int)(worldPoint.x / size1)) * size1) >= 0.75*size1) {
+		result.x += 4;
+	} else if ((worldPoint.x - ((int)(worldPoint.x / size1)) * size1) >= 0.5*size1) {
+		result.x += 2;
+	} else if ((worldPoint.x - ((int)(worldPoint.x / size1)) * size1) >= 0.25*size1) {
+		result.x += 1;
+	}
+
+	if ((worldPoint.y - ((int)(worldPoint.y / size1)) * size1) >= 0.75*size1) {
+		result.y += 4;
+	} else if ((worldPoint.y - ((int)(worldPoint.y / size1)) * size1) >= 0.5*size1) {
+		result.y += 2;
+	} else if ((worldPoint.y - ((int)(worldPoint.y / size1)) * size1) >= 0.25*size1) {
+		result.y += 1;
+	}
+
+
+	result.z = 0;
+
+	return result;
+}
+
+void player() {
+	point minimapPos = coordWorldToMinimap(point(posX, posZ, 0));
+	float i = minimapPos.x;
+	float j = minimapPos.y + 500;
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0.0, (double)win->Xres, 0.0, (double)win->Yres);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glGenTextures(3, texPlayer->OpenGL_ID);
+	glBindTexture(GL_TEXTURE_2D, texPlayer->OpenGL_ID[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.95);
+	glRasterPos2i(i, j);
+	if (texPlayer->isRGBA)
+		glDrawPixels(texPlayer->img_color->lenx, texPlayer->img_color->leny,
+		GL_RGBA, GL_UNSIGNED_BYTE, texPlayer->img_all);
+	else
+		glDrawPixels(texPlayer->img_color->lenx, texPlayer->img_color->leny,
+		GL_RGBA, GL_UNSIGNED_BYTE, texPlayer->img_color->data);
+	glDisable(GL_ALPHA_TEST);
+}
+
+void minimap() {
+	// render player's position on the minimap
+	player();
+	int i = 0;
+	int j = 500;
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0.0, (double)win->Xres, 0.0, (double)win->Yres);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	glGenTextures(2, texMinimap->OpenGL_ID);
+	glBindTexture(GL_TEXTURE_2D, texMinimap->OpenGL_ID[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.95);
+	glRasterPos2i(i, j);
+	if (texMinimap->isRGBA)
+		glDrawPixels(texMinimap->img_color->lenx, texMinimap->img_color->leny,
+		GL_RGBA, GL_UNSIGNED_BYTE, texMinimap->img_all);
+	else
+		glDrawPixels(texMinimap->img_color->lenx, texMinimap->img_color->leny,
+		GL_RGBA, GL_UNSIGNED_BYTE, texMinimap->img_color->data);
+	glDisable(GL_ALPHA_TEST);
+
+	
+}
 
 /********************************************************************\
 *                                                                    *
@@ -268,11 +350,11 @@ bool start()
 	texGrass = new Texture();
 	texGrass->load_texture("./data/grass.tga", NULL);
 
-	//todo
-	texture_terrain = new Texture();
-	texture_terrain->load_texture("./data/terrain.tga", NULL);
-	heightmap = new Image();
-	heightmap->load_tga("./data/heightmap.tga");
+	texMinimap = new Texture();
+	texMinimap->load_texture("./data/labyrinth1.tga", "./data/labyrinth1mask.tga");
+	
+	texPlayer = new Texture();
+	texPlayer->load_texture("./data/player.tga", "./data/playermask.tga");
 
 	cam = new CAMERA();
 	
@@ -399,7 +481,7 @@ void main_loop()
 
 
 	generateLabyrinth();
-	//terrain();
+	minimap();
 
 	
 
