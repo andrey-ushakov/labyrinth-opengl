@@ -55,8 +55,6 @@ CAMERA *cam = NULL;
 float	angleX = 0;
 float	angleY = 0;
 float	angleZ = 0;
-float oldAngleX = 0;
-float oldAngleY = 0;
 point posStart;
 float posX = 35;		float prevPosX = 35;
 float posY = 4.9;		float prevPosY = 4.9;
@@ -682,10 +680,6 @@ bool start()
 
 	cam = new CAMERA();
 
-	/*glNewList(cubeList, GL_COMPILE);
-	cube(0, 0);
-	glEndList();*/
-
 	posStart = coordMinimapToWorld(13,9);
 	posStart.y += 3.5;
 	prevPosX = posX = posStart.x;
@@ -724,11 +718,6 @@ void main_loop()
 		PostMessage(win->handle,WM_CLOSE,0,0);	// Stoppe la "pompe à message" en y envoyant le message "QUIT"
 	}
 	glClearColor(0.498f, 0.780f, 1.0f, 1.0f);
-
-	/*if (tim->global_timer_25_Hz)				// augmente angleY tous les 20ème de seconde
-        angleY += 1.0f;
-	if (angleY >= 360) angleY -= 360;*/
-
 
 
 
@@ -793,55 +782,6 @@ void main_loop()
 
 	generateLabyrinth();
 	minimap();
-	//exitDoor();
-
-	oldAngleX = angleX;
-
-	//////////////////////////
-	/*for (int i = 0; i < heightmapLabyrinth->lenx / 4 - 1; ++i)
-	{
-		for (int j = 0; j < heightmapLabyrinth->leny / 4 - 1; ++j)
-		{
-			if (true)
-			{
-				if (j + 1 <= heightmapLabyrinth->leny / 4 - 1 && *(bPtr_bricks[i] + j + 1) == true)
-				{
-					*(bPtr_bricks[i] + j + 1) = false;
-				}
-
-				if (j - 1 >= 0 && *(bPtr_bricks[i] + j - 1) == true)
-				{
-					*(bPtr_bricks[i] + j - 1) = false;
-				}
-
-				if (i + 1 <= heightmapLabyrinth->lenx / 4 - 1 && *(bPtr_bricks[i + 1] + j) == true)
-				{
-					*(bPtr_bricks[i + 1] + j) = false;
-				}
-
-				if (i - 1 > 0 && *(bPtr_bricks[i - 1] + j) == true)
-				{
-					*(bPtr_bricks[i - 1] + j) = false;
-				}
-
-
-				int i_xPlayerUpdate = cam->position.x / size1;
-				int i_zPlayerUpdate = cam->position.z / size1;
-
-				if ((i_xPlayerUpdate == i + 1 && i_zPlayerUpdate == j)
-					|| (i_xPlayerUpdate == i - 1 && i_zPlayerUpdate == j)
-					|| (i_xPlayerUpdate == i && i_zPlayerUpdate == j + 1)
-					|| (i_xPlayerUpdate == i && i_zPlayerUpdate == j - 1))
-				{
-					//debug("YOU DIED");
-					//PostMessage(win->handle, WM_CLOSE, 0, 0);	// Stoppe la "pompe ?message" en y envoyant le message "QUIT"
-				}
-			}
-		}
-	}*/
-
-
-
 
 	//////////////////////////
 
