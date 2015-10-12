@@ -659,7 +659,7 @@ bool start()
 	texGrass->load_texture("./data/grass.tga", NULL);
 
 	texMinimap = new Texture();
-	texMinimap->load_texture("./data/labyrinth1.tga", "./data/labyrinth1mask.tga");
+	texMinimap->load_texture("./data/labyrinth1_exit.tga", "./data/labyrinth1mask.tga");
 
 	texPlayer = new Texture();
 	texPlayer->load_texture("./data/player.tga", "./data/playermask.tga");
