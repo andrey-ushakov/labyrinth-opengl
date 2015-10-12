@@ -64,6 +64,11 @@ bool b_canMoveAtX = true;
 bool b_canMoveAtZ = true;
 bool **bPtr_bricks;
 
+float f_timer = 0;
+float f_timer_start = 0;
+int f_timer_duration = 60;
+int timeLeft = 100;
+
 /****************************************************************************\
 *                                                                            *
 *                             Variables LOCALES                              *
@@ -312,6 +317,10 @@ void minimap() {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	char timerArr[100] = "";
+	sprintf(timerArr, "%d", timeLeft);
+	write_2_screen(timerArr);
+
 	glGenTextures(2, texMinimap->OpenGL_ID);
 	glBindTexture(GL_TEXTURE_2D, texMinimap->OpenGL_ID[0]);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -368,19 +377,19 @@ float getHeightFromMinimapToWorldByWorldPosition(point posInWorld) {
 void updatePosition() {
 	point dir = cam->direction - cam->position;
 
-	if (inp->keys[KEY_CODE_UP]){
+	if (inp->keys[KEY_CODE_UP] || inp->keys[KEY_CODE_W]) {
 		posX += speed*dir.x;
 		posZ += speed*dir.z;
 	}
-	if (inp->keys[KEY_CODE_DOWN]){
+	if (inp->keys[KEY_CODE_DOWN] || inp->keys[KEY_CODE_S] ) {
 		posX -= speed*dir.x;
 		posZ -= speed*dir.z;
 	}
-	if (inp->keys[KEY_CODE_RIGHT]){
+	if (inp->keys[KEY_CODE_RIGHT] || inp->keys[KEY_CODE_D]) {
 		posX += speed*produit_vectoriel(dir, cam->orientation).x;
 		posZ += speed*produit_vectoriel(dir, cam->orientation).z;
 	}
-	if (inp->keys[KEY_CODE_LEFT]){
+	if (inp->keys[KEY_CODE_LEFT] || inp->keys[KEY_CODE_A]) {
 		posX -= speed*produit_vectoriel(dir, cam->orientation).x;
 		posZ -= speed*produit_vectoriel(dir, cam->orientation).z;
 	}
@@ -614,7 +623,10 @@ bool start()
 	win = new WINDOW();									// prépare la fenêtre
 	win->create( 800, 600, 16 , 60 , false );			// crée la fenêtre
 
+	// init timer
 	tim = new TIMER();									// crée un timer
+	tim->update_horloge();
+	f_timer_start = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
 
 	inp = new MY_INPUT(win);								// initialise la gestion clavier souris
 	create_context(*win);								// crée le contexte OpenGL sur la fenêtre
@@ -685,6 +697,8 @@ bool start()
 	prevPosX = posX = posStart.x;
 	prevPosY = posY = posStart.y;
 	prevPosZ = posZ = posStart.z;
+
+	
 	
 	return true;
 }
@@ -711,6 +725,8 @@ void main_loop()
 	inp->refresh();
 	tim->update_horloge();
 	inp->get_mouse_movement();//pour avoir les dÈplacement de la souris
+
+	f_timer = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
 
 
 	if (inp->keys[KEY_CODE_ESCAPE])
@@ -750,7 +766,7 @@ void main_loop()
 	exitDoor();
 
 	// print debug info
-	glPushMatrix();
+	/*glPushMatrix();
 	glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
 	char angleXArray[100] = "";
 	char angleYArray[100] = "";
@@ -775,8 +791,26 @@ void main_loop()
 	strcat(res, height);
 	
 	write_2_screen(res);
-	glPopMatrix();
+	glPopMatrix();*/
 	// End print debug info
+
+
+	// print timer
+	glPushMatrix();
+	//glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
+	
+	timeLeft = f_timer_duration - (f_timer - f_timer_start);
+	
+	//glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
+
+	
+
+	glPopMatrix();
+
+	if (timeLeft == 0) {
+		debug("YOU LOSE");
+		PostMessage(win->handle, WM_CLOSE, 0, 0);	// Stoppe la "pompe ?message" en y envoyant le message "QUIT"
+	}
 
 
 

@@ -144,7 +144,7 @@ void init_font(WINDOW &w, char *police)
   HFONT font;
   HFONT font_bis;
 
-  font = CreateFont( w.Yres/48,
+  font = CreateFont( w.Yres/24,
                      0,
                      0,
                      0,
