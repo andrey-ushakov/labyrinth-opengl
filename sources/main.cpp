@@ -201,9 +201,9 @@ void generateLabyrinth() {
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
 	for (int i = 0; i < (int)heightmapLabyrinth->lenx - 1; i++) {
-		if (i % 4 == 0) {
+		//if (i % 4 == 0) {
 			for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
-				if (j % 4 == 0) {
+				//if (j % 4 == 0) {
 					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] < 125) {
 						glBegin(GL_QUADS);
 						glTexCoord2f(0, 0);
@@ -216,9 +216,9 @@ void generateLabyrinth() {
 						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
 						glEnd();
 					}
-				}
+				//}
 			}
-		}
+		//}
 	}
 	glPopMatrix();
 }
@@ -408,8 +408,8 @@ void updatePosition() {
 	if (angleX > 60) angleX = 60;
 	if (angleX < -60) angleX = -60;
 
-	angleX -= 0.01*(float)inp->Yrelmouse;
-	angleY -= 0.01*(float)inp->Xrelmouse;
+	angleX -= 0.5*(float)inp->Yrelmouse;
+	angleY -= 0.5*(float)inp->Xrelmouse;
 
 
 	//////////////////
@@ -587,7 +587,18 @@ void exitDoor() {
 	glPushMatrix();
 
 
-	cube(6, 6);
+	int i = 119;
+	int j = 105;
+	glBegin(GL_QUADS);
+	glTexCoord2f(0, 0);
+	glVertex3f(i, 0, j);				// 1
+	glTexCoord2f(1, 0);
+	glVertex3f(i, 0, j + size1);		// 2
+	glTexCoord2f(1, 1);
+	glVertex3f(i, size2, j + size1);	// 3
+	glTexCoord2f(0, 1);
+	glVertex3f(i, size2, j);			// 4
+	glEnd();
 
 	glPopMatrix();
 }
@@ -676,7 +687,6 @@ bool start()
 	glEndList();*/
 
 	posStart = coordMinimapToWorld(13,9);
-	//posStart = coordMinimapToWorld(6,6);
 	posStart.y += 3.5;
 	prevPosX = posX = posStart.x;
 	prevPosY = posY = posStart.y;
@@ -748,6 +758,8 @@ void main_loop()
 		cam->direction.x, cam->direction.y, cam->direction.z,		// point cible
 		cam->orientation.x, cam->orientation.y, cam->orientation.z);		// vecteur up
 
+	exitDoor();
+
 	// print debug info
 	glPushMatrix();
 	glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
@@ -755,6 +767,7 @@ void main_loop()
 	char angleYArray[100] = "";
 	char height[100] = "";
 	char res[200] = "";
+	//point pTex = coordWorldToMinimap(point(posX, 0, posZ));
 	sprintf(angleXArray, "%f", posX);
 	sprintf(angleYArray, "%f", posZ);
 	strcat(res, "x: ");
@@ -832,7 +845,7 @@ void main_loop()
 
 	//////////////////////////
 
-	if (posX > 115 && posX < 119 & posZ > 104 && posZ < 108) {
+	if (posX > 114 && posX < 118 & posZ > 105 && posZ < 109) {
 		debug("YOU WIN");
 		PostMessage(win->handle, WM_CLOSE, 0, 0);	// Stoppe la "pompe ?message" en y envoyant le message "QUIT"
 	}
