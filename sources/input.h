@@ -14,7 +14,7 @@ class MY_INPUT
 {
 
   private:
-
+	POINT  old_position;
     bool   *tmp_pulse;
     bool   *tmp_keys;
     bool   LBmouse_tmp;

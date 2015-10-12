@@ -73,7 +73,11 @@ MY_INPUT::MY_INPUT(WINDOW *win)
   Ymouse     = 0;
   Xrelmouse  = 0;
   Yrelmouse  = 0;
-
+  
+  POINT pt;
+  GetCursorPos(&pt);
+  old_position.x = pt.x;
+  old_position.y = pt.y;
 }
 
 
@@ -269,11 +273,15 @@ void MY_INPUT::get_mouse_movement()
   GetCursorPos(&pt);
   Xrelmouse = (short) pt.x;
   Yrelmouse = (short) pt.y;
-  Xrelmouse -= window->Xpos + ((window->Xres)>>1);
-  Yrelmouse -= window->Ypos + ((window->Yres)>>1);
-  SetCursorPos(window->Xpos+((window->Xres)>>1), window->Ypos+((window->Yres)>>1)); // recentre la souris
-
-
+  
+  //Xrelmouse -= window->Xpos + ((window->Xres)>>1);
+  //Yrelmouse -= window->Ypos + ((window->Yres)>>1);
+  //SetCursorPos(window->Xpos+((window->Xres)>>1), window->Ypos+((window->Yres)>>1)); // recentre la souris
+  
+  Xrelmouse -= old_position.x;
+  Yrelmouse -= old_position.y;
+  old_position.x = pt.x;
+  old_position.y = pt.y;
 }
 
 
