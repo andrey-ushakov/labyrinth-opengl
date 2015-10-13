@@ -19,8 +19,6 @@
 #include "maths_3d.h"
 #include <iostream>
 
-#define cubeList 1
-
 
 /****************************************************************************\
 *                                                                            *
@@ -47,8 +45,8 @@ Texture *texExit = NULL;
 Image	*heightmapLabyrinth = NULL;
 Image	*heightmapLabyrinthH = NULL;
 
-float size1 = 5;	// resolution
-float size2 = 5;	// step
+float size1 = 5;
+float size2 = 5;
 
 // Camera
 CAMERA *cam = NULL;
@@ -60,13 +58,14 @@ float posX = 35;		float prevPosX = 35;
 float posY = 4.9;		float prevPosY = 4.9;
 float posZ = 10;		float prevPosZ = 10;
 float speed = 0.15;
-bool b_canMoveAtX = true;
-bool b_canMoveAtZ = true;
-bool **bPtr_bricks;
+bool isCanMoveX = true;
+bool isCanMoveZ = true;
+bool **bricksArr;
 
-float f_timer = 0;
-float f_timer_start = 0;
-int f_timer_duration = 60;
+// timer
+int timer = 0;
+int timerStart = 0;
+int timerDuration = 60;
 int timeLeft = 100;
 
 /****************************************************************************\
@@ -174,10 +173,6 @@ void generateLabyrinth() {
 				if (j % 4 == 0) {
 					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] > 125) {
 						cube(i, j);
-						/*glPushMatrix();
-						glTranslatef(i, 0, j);
-						glCallList(cubeList);
-						glPopMatrix();*/
 					}
 				}
 			}
@@ -204,24 +199,20 @@ void generateLabyrinth() {
 	glEnable(GL_TEXTURE_2D);
 	glPushMatrix();
 	for (int i = 0; i < (int)heightmapLabyrinth->lenx - 1; i++) {
-		//if (i % 4 == 0) {
-			for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
-				//if (j % 4 == 0) {
-					if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] < 125) {
-						glBegin(GL_QUADS);
-						glTexCoord2f(0, 0);
-						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
-						glTexCoord2f(1, 0);
-						glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
-						glTexCoord2f(1, 1);
-						glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
-						glTexCoord2f(0, 1);
-						glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
-						glEnd();
-					}
-				//}
+		for (int j = 0; j < (int)heightmapLabyrinth->leny - 1; j++) {
+			if ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] < 125) {
+				glBegin(GL_QUADS);
+				glTexCoord2f(0, 0);
+				glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1);
+				glTexCoord2f(1, 0);
+				glVertex3f((i / 4)*size1, 0, (j / 4)*size1);
+				glTexCoord2f(1, 1);
+				glVertex3f((i / 4)*size1, 0, (j / 4)*size1 + size1);
+				glTexCoord2f(0, 1);
+				glVertex3f((i / 4)*size1 + size1, 0, (j / 4)*size1 + size1);
+				glEnd();
 			}
-		//}
+		}
 	}
 	glPopMatrix();
 }
@@ -252,7 +243,6 @@ point coordWorldToMinimap(point worldPoint) {
 		result.y += 1;
 	}
 
-
 	result.z = 0;
 
 	return result;
@@ -265,12 +255,10 @@ point coordMinimapToWorld(int x, int y) {
 	posInWorld.x = (x / 4) * size1 + (x % 4) * 0.25 * size1;
 	posInWorld.z = (y / 4) * size1 + (x % 4) * 0.25 * size1;
 
-	if ((float)heightmapLabyrinth->data[3 * (x + heightmapLabyrinth->lenx*y)] > 125)
-	{
+	if ((float)heightmapLabyrinth->data[3 * (x + heightmapLabyrinth->lenx*y)] > 125) {
 		posInWorld.y = size2;
 	}
-	else
-	{
+	else {
 		posInWorld.y = 0;
 	}
 
@@ -338,12 +326,6 @@ void minimap() {
 	glDisable(GL_ALPHA_TEST);	
 }
 
-
-bool isWall(int i, int j) {
-	point coordHeightmap = coordWorldToMinimap(point(i, j, 0));
-	return ((float)heightmapLabyrinth->data[3 * (i + heightmapLabyrinth->lenx*j)] > 125);
-}
-
 float getDistanceXZ(point point1, point point2) {
 	float f_distance;
 	point pointD;
@@ -360,14 +342,10 @@ float getHeightFromMinimapToWorldByWorldPosition(point posInWorld) {
 
 	posInPixel = coordWorldToMinimap(posInWorld);
 
-	if ((float)heightmapLabyrinthH->data[3 * ((int)posInPixel.x + heightmapLabyrinth->lenx*(int)posInPixel.y)] > 125)
-		//if ((float)heightmap_terrain->data[3 * ((int)posInPixel.x + heightmap_terrain->lenx*(int)posInPixel.y)] > 125)
-	{
+	if ((float)heightmapLabyrinthH->data[3 * ((int)posInPixel.x + heightmapLabyrinth->lenx*(int)posInPixel.y)] > 125) {
 		posInPixel = coordWorldToMinimap(posInWorld);
 		heightInWorld = size2;
-	}
-	else
-	{
+	} else {
 		heightInWorld = 0;
 	}
 
@@ -423,153 +401,85 @@ void updatePosition() {
 	int i_xPlayerPredict = posX / size1;
 	int i_zPlayerPredict = posZ / size1;
 
-	if (posX >= 1.9*size1)
-	{
-		std::cout << std::endl;
-	}
-
-
 	//////////////////
-	if (
-		(i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1)
-		&& (*(bPtr_bricks[i_xPlayerPredict + 1] + i_zPlayerPredict) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, posZ))
-			<= 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
+	if ( (i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1) && (*(bricksArr[i_xPlayerPredict + 1] + i_zPlayerPredict) == true )) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, posZ)) <= 0.5*size1 * 0.5*size1 + 0.25*size1) {
 			float f = getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, i_zPlayerPredict*size1 + 0.5*size1));
-			b_canMoveAtX = false;
+			isCanMoveX = false;
 		}
 	}
 
-	if (
-		(i_xPlayerPredict - 1 >= 0)
-		&& (*(bPtr_bricks[i_xPlayerPredict - 1] + i_zPlayerPredict) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict - 1)*size1 + 0.5*size1, posY, posZ))
-			<= 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtX = false;
+	if ( (i_xPlayerPredict - 1 >= 0)&& (*(bricksArr[i_xPlayerPredict - 1] + i_zPlayerPredict) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict - 1)*size1 + 0.5*size1, posY, posZ))<= 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveX = false;
 		}
 	}
 
-	if (
-		(i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1)
-		&& (*(bPtr_bricks[i_xPlayerPredict] + i_zPlayerPredict + 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point(posX, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtZ = false;
+	if ((i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1)&& (*(bricksArr[i_xPlayerPredict] + i_zPlayerPredict + 1) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point(posX, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1))<= 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveZ = false;
 		}
 	}
 
-	if (
-		(i_zPlayerPredict - 1 >= 0)
-		&& (*(bPtr_bricks[i_xPlayerPredict] + i_zPlayerPredict - 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point(posX, posY, (i_zPlayerPredict - 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtZ = false;
+	if ((i_zPlayerPredict - 1 >= 0)&& (*(bricksArr[i_xPlayerPredict] + i_zPlayerPredict - 1) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point(posX, posY, (i_zPlayerPredict - 1)*size1 + 0.5*size1)) <= 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveZ = false;
 		}
 	}
 
-	if (
-		(i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1) && (i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1)
-		&& (*(bPtr_bricks[i_xPlayerPredict + 1] + i_zPlayerPredict + 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtX = false;
-			b_canMoveAtZ = false;
+	if ((i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1) && (i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1) && (*(bricksArr[i_xPlayerPredict + 1] + i_zPlayerPredict + 1) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1)) <= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveX = false;
+			isCanMoveZ = false;
 		}
 	}
 
-	if (
-		(i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1) && (i_zPlayerPredict - 1 >= 0)
-		&& (*(bPtr_bricks[i_xPlayerPredict + 1] + i_zPlayerPredict - 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict - 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtX = false;
-			b_canMoveAtZ = false;
+	if ((i_xPlayerPredict + 1 <= heightmapLabyrinth->lenx / 4 - 1) && (i_zPlayerPredict - 1 >= 0) && (*(bricksArr[i_xPlayerPredict + 1] + i_zPlayerPredict - 1) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict - 1)*size1 + 0.5*size1)) <= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveX = false;
+			isCanMoveZ = false;
 		}
 	}
 
-	if (
-		(i_xPlayerPredict - 1 >= 0) && (i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1)
-		&& (*(bPtr_bricks[i_xPlayerPredict - 1] + i_zPlayerPredict + 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict - 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtX = false;
-			b_canMoveAtZ = false;
+	if ((i_xPlayerPredict - 1 >= 0) && (i_zPlayerPredict + 1 <= heightmapLabyrinth->leny / 4 - 1) && (*(bricksArr[i_xPlayerPredict - 1] + i_zPlayerPredict + 1) == true) ) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict - 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1)) <= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1){
+			isCanMoveX = false;
+			isCanMoveZ = false;
 		}
 	}
 
-	if (
-		(i_xPlayerPredict - 1 >= 0) && (i_zPlayerPredict - 1 >= 0)
-		&& (*(bPtr_bricks[i_xPlayerPredict - 1] + i_zPlayerPredict - 1) == true
-		)
-		)
-	{
-		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1))
-			<= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1)
-		{
-			b_canMoveAtX = false;
-			b_canMoveAtZ = false;
+	if ((i_xPlayerPredict - 1 >= 0) && (i_zPlayerPredict - 1 >= 0)&& (*(bricksArr[i_xPlayerPredict - 1] + i_zPlayerPredict - 1) == true)) {
+		if (getDistanceXZ(point(posX, posY, posZ), point((i_xPlayerPredict + 1)*size1 + 0.5*size1, posY, (i_zPlayerPredict + 1)*size1 + 0.5*size1)) <= 0.5*size1 * 0.5*size1 + 0.5*size1 * 0.5*size1 + 0.25*size1) {
+			isCanMoveX = false;
+			isCanMoveZ = false;
 		}
 	}
 
-	if (posY > posStart.y)
-	{
-		if (getHeightFromMinimapToWorldByWorldPosition(point(prevPosX, prevPosY, posZ)) > posStart.y)
-		{
-			b_canMoveAtZ = false;
+	if (posY > posStart.y) {
+		if (getHeightFromMinimapToWorldByWorldPosition(point(prevPosX, prevPosY, posZ)) > posStart.y) {
+			isCanMoveZ = false;
 		}
-		if (getHeightFromMinimapToWorldByWorldPosition(point(posX, prevPosY, prevPosZ)) > posStart.y)
-		{
-			b_canMoveAtX = false;
+		if (getHeightFromMinimapToWorldByWorldPosition(point(posX, prevPosY, prevPosZ)) > posStart.y) {
+			isCanMoveX = false;
 		}
 	}
 
 
 
-	if (b_canMoveAtX == false)
-	{
+	if (isCanMoveX == false) {
 		posX = prevPosX;
 	}
-	if (b_canMoveAtZ == false)
-	{
+	if (isCanMoveZ == false) {
 		posZ = prevPosZ;
 	}
-	posY = posStart.y;
-
+	posY = posStart.y; 
+	
 	//////////////////
-	cam->update(point(posX, posY, posZ), angleX, angleY, angleZ);
-
-
+	cam->update(point(posX, posY, posZ), angleX, angleY, angleZ); 
+	
 	//////////////////
-	b_canMoveAtX = true;
-	b_canMoveAtZ = true;
+	isCanMoveX = true;
+	isCanMoveZ = true;
 	prevPosX = posX;
 	prevPosY = posY;
 	prevPosZ = posZ;
@@ -626,7 +536,7 @@ bool start()
 	// init timer
 	tim = new TIMER();									// crée un timer
 	tim->update_horloge();
-	f_timer_start = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
+	timerStart = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
 
 	inp = new MY_INPUT(win);								// initialise la gestion clavier souris
 	create_context(*win);								// crée le contexte OpenGL sur la fenêtre
@@ -678,17 +588,13 @@ bool start()
 	texExit->load_texture("./data/exit.tga", "./data/exitmask.tga");
 
 	// bricks
-	bPtr_bricks = new bool*[heightmapLabyrinth->lenx / 4];
-	for (int i = 0; i < heightmapLabyrinth->lenx / 4; ++i)
-	{
-		bPtr_bricks[i] = new bool[heightmapLabyrinth->leny / 4];
-
-		for (int j = 0; j < heightmapLabyrinth->leny / 4; ++j)
-		{
-			*(bPtr_bricks[i] + j) = false;
+	bricksArr = new bool *[heightmapLabyrinth->lenx / 4];
+	for (int i = 0; i < heightmapLabyrinth->lenx / 4; ++i) {
+		bricksArr[i] = new bool[heightmapLabyrinth->leny / 4];
+		for (int j = 0; j < heightmapLabyrinth->leny / 4; ++j) {
+			*(bricksArr[i] + j) = false;
 		}
 	}
-
 
 	cam = new CAMERA();
 
@@ -726,11 +632,10 @@ void main_loop()
 	tim->update_horloge();
 	inp->get_mouse_movement();//pour avoir les dÈplacement de la souris
 
-	f_timer = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
+	timer = (float)tim->get_heure() * 3600 + (float)tim->get_minute() * 60 + (float)tim->get_seconde();
 
 
-	if (inp->keys[KEY_CODE_ESCAPE])
-	{	  
+	if (inp->keys[KEY_CODE_ESCAPE]) {	  
 		PostMessage(win->handle,WM_CLOSE,0,0);	// Stoppe la "pompe à message" en y envoyant le message "QUIT"
 	}
 	glClearColor(0.498f, 0.780f, 1.0f, 1.0f);
@@ -795,17 +700,7 @@ void main_loop()
 	// End print debug info
 
 
-	// print timer
-	glPushMatrix();
-	//glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
-	
-	timeLeft = f_timer_duration - (f_timer - f_timer_start);
-	
-	//glTranslatef(cam->direction.x, cam->direction.y, cam->direction.z);
-
-	
-
-	glPopMatrix();
+	timeLeft = timerDuration - (timer - timerStart);
 
 	if (timeLeft == 0) {
 		debug("YOU LOSE");
@@ -849,13 +744,11 @@ void main_loop()
 * Arrête l'application                                               *
 *                                                                    *
 \********************************************************************/
-void stop()
-{
+void stop() {
 	delete inp;
 	delete tim;
 
-	if (win)
-	{
+	if (win) {
 		kill_font();
 		kill_context(*win);
 		delete win;
@@ -868,8 +761,7 @@ void stop()
 * Point d'entrée de notre programme pour Windows ("WIN32")           *
 *                                                                    *
 \********************************************************************/
-int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR szCmdLine,int iCmdShow)
-{
+int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR szCmdLine,int iCmdShow) {
 	MSG  msg;
 
 	win	= NULL;
@@ -890,18 +782,16 @@ int WINAPI WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR szCmdLine,i
 	//  |  \/ 
 	//  \__/
 
-	while (true)
-	{
-		if (PeekMessage(&msg, NULL,0,0,PM_NOREMOVE))	// s'il y a un message, appelle WndProc() pour le traiter
+	while (true) {
+		if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) // s'il y a un message, appelle WndProc() pour le traiter
 		{
-			if (!GetMessage(&msg,NULL,0,0))				// "pompe à message"
+			if (!GetMessage(&msg, NULL, 0, 0)) // "pompe à message"
 				break;
 			TranslateMessage(&msg);
-			DispatchMessage (&msg);
+			DispatchMessage(&msg);
 		}
-		else 
-		{
-			main_loop();								// sinon, appelle main_loop()
+		else {
+			main_loop(); // sinon, appelle main_loop()
 		}
 	}
 
